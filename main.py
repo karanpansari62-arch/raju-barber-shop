@@ -444,15 +444,13 @@ def admin_toggle_service(
     return RedirectResponse(url="/admin/services", status_code=303)
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    import socket
     from config import HOST, PORT
 
-    # Gracefully handle port in use
-    target_port = PORT
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        if s.connect_ex((HOST, target_port)) == 0:
-            target_port = 8080 if PORT == 8000 else 8000
+    # Read dynamic PORT provided by Render/Cloud, defaulting to PORT from config
+    port = int(os.environ.get("PORT", PORT))
+    host = os.environ.get("HOST", "0.0.0.0")
 
-    print(f"Starting server on http://{HOST}:{target_port} ...")
-    uvicorn.run("main:app", host=HOST, port=target_port, reload=True)
+    print(f"Starting server on http://{host}:{port} ...")
+    uvicorn.run("main:app", host=host, port=port)
