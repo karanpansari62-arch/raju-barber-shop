@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Blocks - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="dash-nav">
+  <div class="logo">
+    <span>💈</span>
+    <span>{{ shop_name }} (Admin)</span>
+  </div>
+  <div class="user-info">
+    <a href="/admin/logout" class="logout-link">Logout</a>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="dash-tabs">
+  <a href="/admin" class="dash-tab">Appointments</a>
+  <a href="/admin/blocks" class="dash-tab active">Emergency Blocks</a>
+  <a href="/admin/services" class="dash-tab">Services & Rates</a>
+  <a href="/" target="_blank" class="dash-tab" style="margin-left: auto; color: var(--primary-accent);">View Booking Page ↗</a>
+</div>
+
+<!-- Add Emergency Block Form -->
+<div class="card">
+  <div class="step-title">
+    <span>+ Emergency Time Block Karein</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+    Agar kisi kaam, emergency, ya light jane ki wajah se dukaan band rakhni ho, toh yahan time block karein. Us time par customers book nahi kar payenge.
+  </p>
+
+  <form method="POST" action="/admin/blocks/add">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="block_date" class="form-label">Block Date</label>
+        <input type="date" id="block_date" name="block_date" class="form-input" value="{{ today_date }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="start_time" class="form-label">Start Time (HH:MM)</label>
+        <input type="text" id="start_time" name="start_time" class="form-input" placeholder="e.g. 16:00" pattern="[0-2][0-9]:[0-5][0-9]" required>
+      </div>
+
+      <div class="form-group">
+        <label for="end_time" class="form-label">End Time (HH:MM)</label>
+        <input type="text" id="end_time" name="end_time" class="form-input" placeholder="e.g. 18:00" pattern="[0-2][0-9]:[0-5][0-9]" required>
+      </div>
+
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="reason" class="form-label">Reason / Wajah</label>
+        <input type="text" id="reason" name="reason" class="form-input" placeholder="e.g. Doctor visit, Light cut, Personal work" required>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 4px;">Time Block Karein</button>
+  </form>
+</div>
+
+<!-- Active Emergency Blocks List -->
+<div class="card">
+  <div class="step-title">
+    <span>Active Emergency Blocks</span>
+  </div>
+
+  {% if not blocks %}
+    <p style="font-size: 0.9rem; color: var(--text-muted); padding: 12px 0;">Koi emergency block active nahi hai. Sabhi normal slots open hain.</p>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>To</th>
+            <th>Reason</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in blocks %}
+          <tr>
+            <td><strong>{{ b.start_at[0:10] }} {{ b.start_at[11:16] }}</strong></td>
+            <td><strong>{{ b.end_at[0:10] }} {{ b.end_at[11:16] }}</strong></td>
+            <td>{{ b.reason }}</td>
+            <td>
+              <form method="POST" action="/admin/blocks/{{ b.id }}/delete" style="display:inline;" onsubmit="return confirm('Is block ko remove karna chahte hain?');">
+                <button type="submit" class="btn-sm btn-sm-danger">Unblock / Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

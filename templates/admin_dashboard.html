@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="dash-nav">
+  <div class="logo">
+    <span>💈</span>
+    <span>{{ shop_name }} (Admin)</span>
+  </div>
+  <div class="user-info">
+    <a href="/admin/logout" class="logout-link">Logout</a>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="dash-tabs">
+  <a href="/admin" class="dash-tab active">Appointments</a>
+  <a href="/admin/blocks" class="dash-tab">Emergency Blocks</a>
+  <a href="/admin/services" class="dash-tab">Services & Rates</a>
+  <a href="/" target="_blank" class="dash-tab" style="margin-left: auto; color: var(--primary-accent);">View Booking Page ↗</a>
+</div>
+
+<!-- Daily Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-val">{{ stats.total }}</div>
+    <div class="stat-label">Total Bookings</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color: #0284c7;">{{ stats.confirmed }}</div>
+    <div class="stat-label">Confirmed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color: #10b981;">{{ stats.completed }}</div>
+    <div class="stat-label">Completed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color: #f59e0b;">{{ stats.no_show }}</div>
+    <div class="stat-label">No Show</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color: #059669;">₹{{ stats.revenue }}</div>
+    <div class="stat-label">Total Cash Earned</div>
+  </div>
+</div>
+
+<!-- Date Filter Form -->
+<form method="GET" action="/admin" class="filter-bar">
+  <div>
+    <label for="booking_date" style="font-size: 0.825rem; font-weight: 600; display: block; margin-bottom: 4px;">Date Chuniye</label>
+    <input type="date" id="booking_date" name="booking_date" value="{{ target_date }}" onchange="this.form.submit()">
+  </div>
+
+  <div style="margin-left: auto; align-self: flex-end;">
+    <a href="/admin" class="btn-sm" style="background: #f1f5f9; color: var(--text-main); text-decoration: none; padding: 8px 14px;">Reset to Today</a>
+  </div>
+</form>
+
+<!-- Bookings List -->
+<div>
+  <div class="step-title" style="margin-bottom: 14px;">
+    <span>Appointments ({{ target_date }})</span>
+  </div>
+
+  {% if not bookings %}
+    <div class="card" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+      <p style="font-size: 1.1rem; margin-bottom: 6px;">Is date ke liye koi booking nahi hai.</p>
+      <p style="font-size: 0.85rem;">Customer ki new booking aate hi yahan live dikhayi degi.</p>
+    </div>
+  {% else %}
+    {% for b in bookings %}
+    <div class="booking-card">
+      <div class="booking-header">
+        <div>
+          <div class="booking-time">
+            {{ b.start_at[11:16] }} - {{ b.end_at[11:16] }}
+          </div>
+          <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 2px;">
+            Duration: {{ b.duration_minutes }} mins
+          </div>
+        </div>
+
+        <div>
+          {% if b.status == 'confirmed' %}
+            <span class="badge" style="background: #e0f2fe; color: #0369a1;">CONFIRMED</span>
+          {% elif b.status == 'completed' %}
+            <span class="badge badge-success">COMPLETED</span>
+          {% elif b.status == 'no_show' %}
+            <span class="badge" style="background: #fef3c7; color: #92400e;">NO SHOW</span>
+          {% elif b.status == 'cancelled' %}
+            <span class="badge badge-danger">CANCELLED</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Customer</span>
+        <span class="info-val"><strong>{{ b.customer_name }}</strong></span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Contact</span>
+        <span class="info-val">
+          <a href="tel:{{ b.phone }}" class="btn-sm" style="background: #e0f2fe; color: #0369a1; text-decoration: none; padding: 4px 8px;">
+            📞 Call {{ b.phone }}
+          </a>
+          <a href="https://wa.me/91{{ b.phone }}?text=Namaste%20{{ b.customer_name }}!%20Raju%20Barber%20Shop%20me%20aapka%20appointment%20hai." target="_blank" class="btn-sm" style="background: #dcfce7; color: #166534; text-decoration: none; padding: 4px 8px; margin-left: 6px;">
+            💬 WhatsApp
+          </a>
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Service</span>
+        <span class="info-val">{{ b.service_name }} — <strong>₹{{ b.price_inr }}</strong></span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions-row">
+        {% if b.status != 'completed' %}
+        <form method="POST" action="/admin/bookings/{{ b.id }}/status" style="display:inline;">
+          <input type="hidden" name="status" value="completed">
+          <input type="hidden" name="redirect_date" value="{{ target_date }}">
+          <button type="submit" class="btn-sm btn-sm-success">✓ Complete</button>
+        </form>
+        {% endif %}
+
+        {% if b.status != 'no_show' and b.status != 'completed' %}
+        <form method="POST" action="/admin/bookings/{{ b.id }}/status" style="display:inline;">
+          <input type="hidden" name="status" value="no_show">
+          <input type="hidden" name="redirect_date" value="{{ target_date }}">
+          <button type="submit" class="btn-sm btn-sm-warning">✗ No Show</button>
+        </form>
+        {% endif %}
+
+        {% if b.status != 'cancelled' %}
+        <form method="POST" action="/admin/bookings/{{ b.id }}/status" style="display:inline;" onsubmit="return confirm('Cancel this customer booking?');">
+          <input type="hidden" name="status" value="cancelled">
+          <input type="hidden" name="redirect_date" value="{{ target_date }}">
+          <button type="submit" class="btn-sm btn-sm-danger">Cancel</button>
+        </form>
+        {% endif %}
+
+        {% if b.status != 'confirmed' %}
+        <form method="POST" action="/admin/bookings/{{ b.id }}/status" style="display:inline;">
+          <input type="hidden" name="status" value="confirmed">
+          <input type="hidden" name="redirect_date" value="{{ target_date }}">
+          <button type="submit" class="btn-sm" style="background: #f1f5f9; color: var(--text-main);">Revert</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

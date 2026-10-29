@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Owner Login - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 380px; margin: 40px auto; padding: 28px;">
+  <div style="text-align: center; margin-bottom: 24px;">
+    <h1 style="font-size: 1.5rem; color: var(--primary);">💈 Owner Portal</h1>
+    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">{{ shop_name }}</div>
+  </div>
+
+  {% if error %}
+    <div class="banner banner-danger">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/admin/login">
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label for="password" class="form-label">Admin Password / PIN</label>
+      <input type="password" id="password" name="password" class="form-input" placeholder="Enter admin password" required autofocus autocomplete="current-password">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login Karein</button>
+  </form>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="/" style="font-size: 0.85rem; color: var(--primary-accent); text-decoration: none;">
+      ← Customer Booking Page Par Jayein
+    </a>
+  </div>
+</div>
+{% endblock %}

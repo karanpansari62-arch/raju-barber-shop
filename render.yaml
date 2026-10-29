@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: raju-barber-shop-bhusawal
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt && python seed.py
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SHOP_NAME
+        value: "Raju Barber Shop, Bhusawal"
+      - key: OPEN_TIME
+        value: "10:00"
+      - key: CLOSE_TIME
+        value: "21:00"
+      - key: WEEKLY_OFF_DAY
+        value: "Tuesday"
+      - key: BREAK_START
+        value: "14:00"
+      - key: BREAK_END
+        value: "15:00"
+      - key: SHOP_PHONE
+        value: "919876543210"
+      - key: ADMIN_PASSWORD
+        value: "raju123"
+      - key: TIMEZONE
+        value: "Asia/Kolkata"

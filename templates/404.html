@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align: center; margin-top: 40px; padding: 36px 20px;">
+  <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 8px;">404</h1>
+  <p style="color: var(--text-muted); margin-bottom: 24px;">
+    {{ message or "Ye page ya appointment record nahi mila." }}
+  </p>
+  <a href="/" class="btn btn-primary" style="display: inline-block; width: auto; padding: 10px 24px;">
+    Home Page Par Jayein
+  </a>
+</div>
+{% endblock %}

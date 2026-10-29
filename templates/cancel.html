@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Cancellation - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<header class="header">
+  <h1>💈 {{ shop_name }}</h1>
+  <div class="shop-meta">Appointment Cancellation</div>
+</header>
+
+<div class="card">
+  <div class="step-title">
+    <span>Booking Details</span>
+  </div>
+
+  {% if cancelled %}
+    <div class="banner banner-danger">
+      {% if message %}{{ message }}{% else %}Aapki appointment successfully CANCEL ho chuki hai.{% endif %}
+    </div>
+  {% else %}
+    <div class="banner banner-info">
+      Aapki appointment abhi confirmed hai. Agar aap nahi aa sakte toh niche button se cancel kar sakte hain.
+    </div>
+  {% endif %}
+
+  <div class="info-row">
+    <span class="info-label">Customer Name</span>
+    <span class="info-val">{{ booking.customer_name }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Mobile Number</span>
+    <span class="info-val">{{ masked_phone }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Service</span>
+    <span class="info-val">{{ booking.service_name }} (₹{{ booking.price_inr }})</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Start Time</span>
+    <span class="info-val">{{ booking.start_at }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">End Time</span>
+    <span class="info-val">{{ booking.end_at }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Current Status</span>
+    <span class="info-val">
+      {% if cancelled %}
+        <span class="badge badge-danger">CANCELLED</span>
+      {% else %}
+        <span class="badge badge-success">CONFIRMED</span>
+      {% endif %}
+    </span>
+  </div>
+
+  {% if not cancelled %}
+    <form method="POST" action="/cancel/{{ token }}" style="margin-top: 24px;">
+      <button type="submit" class="btn btn-danger" onclick="return confirm('Kya aap sach me ye appointment cancel karna chahte hain?');">
+        Appointment Cancel Karein
+      </button>
+    </form>
+  {% endif %}
+
+  <a href="/" class="btn btn-outline" style="margin-top: 14px;">
+    ← Wapas Home Par Jayein
+  </a>
+</div>
+{% endblock %}

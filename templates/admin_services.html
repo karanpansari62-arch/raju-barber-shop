@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Services & Rates - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="dash-nav">
+  <div class="logo">
+    <span>💈</span>
+    <span>{{ shop_name }} (Admin)</span>
+  </div>
+  <div class="user-info">
+    <a href="/admin/logout" class="logout-link">Logout</a>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="dash-tabs">
+  <a href="/admin" class="dash-tab">Appointments</a>
+  <a href="/admin/blocks" class="dash-tab">Emergency Blocks</a>
+  <a href="/admin/services" class="dash-tab active">Services & Rates</a>
+  <a href="/" target="_blank" class="dash-tab" style="margin-left: auto; color: var(--primary-accent);">View Booking Page ↗</a>
+</div>
+
+<!-- Add Service -->
+<div class="card">
+  <div class="step-title">
+    <span>+ Nayi Service Add Karein</span>
+  </div>
+  <form method="POST" action="/admin/services/add">
+    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px;">
+      <div class="form-group">
+        <label for="name" class="form-label">Service Name</label>
+        <input type="text" id="name" name="name" class="form-input" placeholder="e.g. Hair Spa / D-Tan" required>
+      </div>
+
+      <div class="form-group">
+        <label for="dur" class="form-label">Duration (Mins)</label>
+        <input type="number" id="dur" name="duration_minutes" class="form-input" value="30" min="5" max="180" step="5" required>
+      </div>
+
+      <div class="form-group">
+        <label for="price" class="form-label">Price (₹)</label>
+        <input type="number" id="price" name="price_inr" class="form-input" value="150" min="0" required>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top: 4px; width: auto; padding: 8px 20px;">Save Service</button>
+  </form>
+</div>
+
+<!-- Current Services List -->
+<div class="card">
+  <div class="step-title">
+    <span>Services List</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Service Name</th>
+          <th>Duration</th>
+          <th>Rate</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in services %}
+        <tr>
+          <td><strong>{{ s.name }}</strong></td>
+          <td>{{ s.duration_minutes }} mins</td>
+          <td>₹{{ s.price_inr }}</td>
+          <td>
+            {% if s.is_active %}
+              <span class="badge badge-success">ACTIVE</span>
+            {% else %}
+              <span class="badge badge-danger">INACTIVE</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" action="/admin/services/{{ s.id }}/toggle" style="display:inline;">
+              <button type="submit" class="btn-sm {% if s.is_active %}btn-sm-danger{% else %}btn-sm-success{% endif %}">
+                {% if s.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

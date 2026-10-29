@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+
+{% block title %}{{ shop_name }} - Book Appointment{% endblock %}
+
+{% block content %}
+<div id="booking-flow">
+  <!-- Language Switcher Bar -->
+  <div class="lang-switcher">
+    <button type="button" class="lang-btn active" data-lang="mr">मराठी</button>
+    <button type="button" class="lang-btn" data-lang="hi">हिंदी</button>
+    <button type="button" class="lang-btn" data-lang="en">English</button>
+  </div>
+
+  <header class="header">
+    <h1>💈 {{ shop_name }}</h1>
+    <div class="shop-meta" id="header-timings">Bhusawal, Maharashtra • Timings: {{ open_time }} to {{ close_time }}</div>
+    <div style="margin-top: 6px;">
+      <span class="badge badge-danger" id="header-off-day">Weekly Off: {{ weekly_off_day }}</span>
+      <span class="badge" style="background: #fef3c7; color: #92400e;" id="header-break">Lunch Break: {{ break_start }} - {{ break_end }}</span>
+    </div>
+  </header>
+
+  <!-- Error Banner -->
+  <div id="error-banner" class="banner banner-danger hidden"></div>
+
+  <form id="booking-form" onsubmit="return false;">
+    <!-- Step 1: Select Service -->
+    <section class="card">
+      <div class="step-title">
+        <span class="step-num">1</span>
+        <span data-i18n="step_1_title">सेवा निवडा (Select Service)</span>
+      </div>
+      <div class="option-list" id="services-container">
+        {% for s in services %}
+        <div class="option-item service-item {% if loop.first %}selected{% endif %}"
+             data-id="{{ s.id }}"
+             data-duration="{{ s.duration_minutes }}"
+             data-price="{{ s.price_inr }}"
+             data-name="{{ s.name }}">
+          <div>
+            <div class="name">{{ s.name }}</div>
+            <div class="details">{{ s.duration_minutes }} mins</div>
+          </div>
+          <div class="price">₹{{ s.price_inr }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Step 2: Select Date & Time -->
+    <section class="card">
+      <div class="step-title">
+        <span class="step-num">2</span>
+        <span data-i18n="step_2_title">तारीख आणि वेळ निवडा (Select Date & Time)</span>
+      </div>
+
+      <div class="form-group">
+        <label for="date-input" class="form-label" data-i18n="booking_date">बुकिंगची तारीख (Booking Date)</label>
+        <input type="date" id="date-input" class="form-input" min="{{ min_date }}" max="{{ max_date }}" value="{{ min_date }}">
+        <div class="help-text" data-i18n="date_help">पुढील 14 दिवसांपर्यंत आगाऊ बुकिंग उपलब्ध आहे.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="available_slots">उपलब्ध वेळा (Available Slots)</label>
+        <div id="slots-status" class="help-text">Slots load ho rahe hain...</div>
+        <div class="slots-container">
+          <div id="slots-grid" class="slots-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: Customer Information -->
+    <section class="card">
+      <div class="step-title">
+        <span class="step-num">3</span>
+        <span data-i18n="step_3_title">तुमचे नाव आणि मोबाईल नंबर (Contact Details)</span>
+      </div>
+
+      <div class="form-group">
+        <label for="cust-name" class="form-label" data-i18n="cust_name_label">पूर्ण नाव (Full Name)</label>
+        <input type="text" id="cust-name" class="form-input" placeholder="उदा. राहुल पाटील" required minlength="2" maxlength="60">
+      </div>
+
+      <div class="form-group">
+        <label for="cust-phone" class="form-label" data-i18n="cust_phone_label">10-अंकी मोबाईल नंबर (Mobile Number)</label>
+        <input type="tel" id="cust-phone" class="form-input" placeholder="उदा. 9876543210" required pattern="[6-9][0-9]{9}">
+        <div class="help-text" data-i18n="cust_phone_help">6, 7, 8, किंवा 9 ने सुरू होणारा 10-अंकी मोबाईल नंबर.</div>
+      </div>
+
+      <button type="button" id="submit-btn" class="btn btn-primary" data-i18n="btn_confirm" disabled>अपॉइंटमेंट निश्चित करा (Confirm)</button>
+    </section>
+  </form>
+</div>
+
+<!-- Step 4: Booking Confirmation Card -->
+<div id="confirmation-card" class="card hidden">
+  <div style="text-align: center; margin-bottom: 16px;">
+    <span class="badge badge-success" id="conf-badge" style="font-size: 0.95rem; padding: 6px 12px;" data-i18n="conf_title">✓ बुकिंग निश्चित झाली! (Confirmed)</span>
+  </div>
+
+  <h2 style="text-align: center; font-size: 1.3rem; margin-bottom: 4px;">{{ shop_name }}</h2>
+  <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;" data-i18n="conf_subtitle">
+    तुमची बुकिंग सुरक्षित झाली आहे. खालील माहिती जपून ठेवा.
+  </p>
+
+  <div class="info-row">
+    <span class="info-label" data-i18n="conf_cust_name">ग्राहक नाव (Customer)</span>
+    <span class="info-val" id="conf-name"></span>
+  </div>
+  <div class="info-row">
+    <span class="info-label" data-i18n="conf_phone">मोबाईल (Mobile)</span>
+    <span class="info-val" id="conf-phone"></span>
+  </div>
+  <div class="info-row">
+    <span class="info-label" data-i18n="conf_service">सेवा (Service)</span>
+    <span class="info-val" id="conf-service"></span>
+  </div>
+  <div class="info-row">
+    <span class="info-label" data-i18n="conf_amount">रक्कम (Amount)</span>
+    <span class="info-val" id="conf-price"></span>
+  </div>
+  <div class="info-row">
+    <span class="info-label" data-i18n="conf_start">वेळ (Start Time)</span>
+    <span class="info-val" id="conf-start"></span>
+  </div>
+  <div class="info-row">
+    <span class="info-label" data-i18n="conf_end">अपेक्षित समाप्ती (End Time)</span>
+    <span class="info-val" id="conf-end"></span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Status</span>
+    <span class="info-val" style="color: #059669; font-weight: 700;" data-i18n="conf_status">CONFIRMED</span>
+  </div>
+
+  <!-- WhatsApp Confirmation & Share Buttons -->
+  <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+    <a id="wa-share-btn" class="btn" href="#" target="_blank" style="background-color: #25D366; color: #fff; font-weight: 600; text-decoration: none;" data-i18n="conf_wa_share">
+      📱 WhatsApp वर स्लिप सेव्ह / शेअर करा
+    </a>
+    <a id="wa-owner-btn" class="btn" href="#" target="_blank" style="background-color: #128C7E; color: #fff; font-weight: 600; text-decoration: none;" data-i18n="conf_wa_owner">
+      💬 राजू भाऊंना WhatsApp वर कळवा
+    </a>
+  </div>
+
+  <div style="margin-top: 20px; padding: 14px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: var(--radius-sm);">
+    <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;" data-i18n="conf_cancel_notice">कधी रद्द करायचे असल्यास या लिंकवरून करा:</div>
+    <a id="conf-cancel-link" class="btn btn-danger" href="#" target="_blank" style="margin-top: 8px;" data-i18n="conf_cancel_btn">अपॉइंटमेंट रद्द करण्याची लिंक (Cancel Link)</a>
+  </div>
+
+  <a href="/" class="btn btn-outline" style="margin-top: 14px;" data-i18n="conf_new_booking">नवीन बुकिंग करा (Book Another)</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function() {
+    const weeklyOffDayInt = {{ weekly_off_day_int | tojson }};
+    const weeklyOffDayStr = {{ weekly_off_day | tojson }};
+    const shopName = {{ shop_name | tojson }};
+    const shopPhone = {{ shop_phone | tojson }};
+    const openTimeStr = {{ open_time | tojson }};
+    const closeTimeStr = {{ close_time | tojson }};
+    const breakStartStr = {{ break_start | tojson }};
+    const breakEndStr = {{ break_end | tojson }};
+
+    // Multi-Language Dictionary
+    const I18N = {
+      mr: {
+        timings: "भुसावळ, महाराष्ट्र • वेळ: " + openTimeStr + " ते " + closeTimeStr,
+        weekly_off: "साप्ताहिक सुट्टी: " + weeklyOffDayStr,
+        break_time: "दुपारची सुट्टी: " + breakStartStr + " - " + breakEndStr,
+        step_1_title: "सेवा निवडा (Select Service)",
+        step_2_title: "तारीख आणि वेळ निवडा (Date & Time)",
+        booking_date: "बुकिंगची तारीख (Booking Date)",
+        date_help: "पुढील 14 दिवसांपर्यंत आगाऊ बुकिंग उपलब्ध आहे.",
+        available_slots: "उपलब्ध वेळा (Available Slots)",
+        step_3_title: "तुमचे नाव आणि मोबाईल नंबर (Contact Details)",
+        cust_name_label: "पूर्ण नाव (Full Name)",
+        cust_name_placeholder: "उदा. राहुल पाटील",
+        cust_phone_label: "10-अंकी मोबाईल नंबर (Mobile Number)",
+        cust_phone_help: "6, 7, 8, किंवा 9 ने सुरू होणारा 10-अंकी मोबाईल नंबर.",
+        btn_confirm: "अपॉइंटमेंट निश्चित करा (Confirm)",
+        btn_in_progress: "बुकिंग होत आहे...",
+        conf_title: "✓ बुकिंग निश्चित झाली! (Confirmed)",
+        conf_subtitle: "तुमची बुकिंग सुरक्षित झाली आहे. खालील माहिती जपून ठेवा.",
+        conf_cust_name: "ग्राहक नाव (Customer)",
+        conf_phone: "मोबाईल नंबर (Mobile)",
+        conf_service: "सेवा (Service)",
+        conf_amount: "रक्कम (Amount)",
+        conf_start: "सुरू होण्याची वेळ (Start)",
+        conf_end: "अपेक्षित समाप्ती (End)",
+        conf_status: "निश्चित (CONFIRMED)",
+        conf_wa_share: "📱 WhatsApp वर स्लिप सेव्ह / शेअर करा",
+        conf_wa_owner: "💬 राजू भाऊंना WhatsApp वर कळवा",
+        conf_cancel_notice: "कधी रद्द करायचे असल्यास या लिंकवरून करा:",
+        conf_cancel_btn: "अपॉइंटमेंट रद्द करण्याची लिंक (Cancel)",
+        conf_new_booking: "नवीन बुकिंग करा (Book Another)",
+        off_day_notice: "दुकान आज बंद आहे (साप्ताहिक सुट्टी). कृपया दुसरा दिवस निवडा.",
+        no_slots: "या तारखेसाठी कोणतीही वेळ उपलब्ध नाही.",
+        slots_available: "वेळा उपलब्ध आहेत:",
+        loading_slots: "वेळा तपासत आहोत...",
+        slot_conflict: "वेळ कन्फ्लिक्ट: ही वेळ आत्ताच दुसऱ्या ग्राहकाने बुक केली. कृपया दुसरी वेळ निवडा.",
+        server_error: "इंटरनेट किंवा सर्व्हर समस्या. कृपया पुन्हा प्रयत्न करा."
+      },
+      hi: {
+        timings: "भुसावल, महाराष्ट्र • समय: " + openTimeStr + " से " + closeTimeStr,
+        weekly_off: "साप्ताहिक छुट्टी: " + weeklyOffDayStr,
+        break_time: "दोपहर का ब्रेक: " + breakStartStr + " - " + breakEndStr,
+        step_1_title: "सर्विस चुनें (Select Service)",
+        step_2_title: "तारीख और समय चुनें (Date & Time)",
+        booking_date: "बुकिंग की तारीख (Booking Date)",
+        date_help: "अगले 14 दिनों तक की एडवांस बुकिंग उपलब्ध है।",
+        available_slots: "उपलब्ध स्लॉट्स (Available Slots)",
+        step_3_title: "आपका नाम और मोबाइल नंबर (Contact Details)",
+        cust_name_label: "पूरा नाम (Full Name)",
+        cust_name_placeholder: "जैसे: राहुल शर्मा",
+        cust_phone_label: "10-अंकों का मोबाइल नंबर (Mobile Number)",
+        cust_phone_help: "6, 7, 8, या 9 से शुरू होने वाला 10-अंकों का मोबाइल नंबर।",
+        btn_confirm: "अपॉइंटमेंट कन्फर्म करें (Confirm)",
+        btn_in_progress: "बुकिंग हो रही है...",
+        conf_title: "✓ बुकिंग कन्फर्म हो गई! (Confirmed)",
+        conf_subtitle: "आपकी बुकिंग सुरक्षित हो गई है। नीचे दी गई जानकारी सेव रखें।",
+        conf_cust_name: "ग्राहक का नाम (Customer)",
+        conf_phone: "मोबाइल नंबर (Mobile)",
+        conf_service: "सर्विस (Service)",
+        conf_amount: "रकम (Amount)",
+        conf_start: "शुरुआती समय (Start)",
+        conf_end: "समाप्त समय (End)",
+        conf_status: "कन्फर्म (CONFIRMED)",
+        conf_wa_share: "📱 WhatsApp पर स्लिप सेव / शेयर करें",
+        conf_wa_owner: "💬 राजू भैया को WhatsApp पर सूचित करें",
+        conf_cancel_notice: "कभी कैंसिल करना हो तो इस लिंक से करें:",
+        conf_cancel_btn: "अपॉइंटमेंट कैंसिल लिंक (Cancel)",
+        conf_new_booking: "एक और नई बुकिंग करें (Book Another)",
+        off_day_notice: "दुकान आज बंद है (साप्ताहिक छुट्टी)। कृपया दूसरा दिन चुनें।",
+        no_slots: "इस तारीख के लिए कोई स्लॉट उपलब्ध नहीं है।",
+        slots_available: "स्लॉट्स उपलब्ध हैं:",
+        loading_slots: "स्लॉट्स चेक हो रहे हैं...",
+        slot_conflict: "स्लॉट कन्फ्लिक्ट: यह स्लॉट अभी किसी और ने बुक कर लिया। कृपया दूसरा समय चुनें।",
+        server_error: "इंटरनेट या सर्वर समस्या। कृपया दोबारा कोशिश करें।"
+      },
+      en: {
+        timings: "Bhusawal, Maharashtra • Timings: " + openTimeStr + " to " + closeTimeStr,
+        weekly_off: "Weekly Off: " + weeklyOffDayStr,
+        break_time: "Lunch Break: " + breakStartStr + " - " + breakEndStr,
+        step_1_title: "Select Service",
+        step_2_title: "Select Date & Time",
+        booking_date: "Booking Date",
+        date_help: "Appointments can be scheduled up to 14 days in advance.",
+        available_slots: "Available Slots (15-min intervals)",
+        step_3_title: "Your Contact Details",
+        cust_name_label: "Full Name",
+        cust_name_placeholder: "e.g. Rahul Patil",
+        cust_phone_label: "10-Digit Mobile Number",
+        cust_phone_help: "10-digit Indian mobile number starting with 6, 7, 8, or 9.",
+        btn_confirm: "Confirm Appointment",
+        btn_in_progress: "Booking in progress...",
+        conf_title: "✓ Booking Confirmed!",
+        conf_subtitle: "Your appointment is confirmed. Please save your cancellation details.",
+        conf_cust_name: "Customer Name",
+        conf_phone: "Mobile Number",
+        conf_service: "Service",
+        conf_amount: "Amount",
+        conf_start: "Start Time",
+        conf_end: "Expected End",
+        conf_status: "CONFIRMED",
+        conf_wa_share: "📱 Save / Share Slip on WhatsApp",
+        conf_wa_owner: "💬 Inform Raju on WhatsApp",
+        conf_cancel_notice: "Need to cancel? Use this secret link:",
+        conf_cancel_btn: "Cancel Appointment Link",
+        conf_new_booking: "Book Another Appointment",
+        off_day_notice: "Shop is closed on this day (Weekly Off). Please pick another date.",
+        no_slots: "No slots available for this date.",
+        slots_available: "slots available:",
+        loading_slots: "Checking available slots...",
+        slot_conflict: "Slot Conflict: This slot was just taken. Please pick another time.",
+        server_error: "Network or server error. Please try again."
+      }
+    };
+
+    let currentLang = localStorage.getItem("raju_lang") || "mr";
+    let selectedServiceId = null;
+    let selectedSlotIso = null;
+
+    const errorBanner = document.getElementById("error-banner");
+    const slotsGrid = document.getElementById("slots-grid");
+    const slotsStatus = document.getElementById("slots-status");
+    const dateInput = document.getElementById("date-input");
+    const nameInput = document.getElementById("cust-name");
+    const phoneInput = document.getElementById("cust-phone");
+    const submitBtn = document.getElementById("submit-btn");
+
+    function setLanguage(lang) {
+      if (!I18N[lang]) lang = "mr";
+      currentLang = lang;
+      localStorage.setItem("raju_lang", lang);
+
+      // Update lang buttons active class
+      document.querySelectorAll(".lang-btn").forEach(function(btn) {
+        if (btn.getAttribute("data-lang") === lang) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      const dict = I18N[lang];
+      document.getElementById("header-timings").textContent = dict.timings;
+      document.getElementById("header-off-day").textContent = dict.weekly_off;
+      document.getElementById("header-break").textContent = dict.break_time;
+
+      nameInput.setAttribute("placeholder", dict.cust_name_placeholder);
+
+      // Translate all data-i18n elements
+      document.querySelectorAll("[data-i18n]").forEach(function(el) {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+
+      fetchSlots();
+    }
+
+    // Bind language buttons
+    document.querySelectorAll(".lang-btn").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        setLanguage(btn.getAttribute("data-lang"));
+      });
+    });
+
+    function showError(msg) {
+      if (!msg) {
+        errorBanner.textContent = "";
+        errorBanner.classList.add("hidden");
+      } else {
+        errorBanner.textContent = msg;
+        errorBanner.classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+
+    // Service Selection
+    const serviceItems = document.querySelectorAll(".service-item");
+    serviceItems.forEach(function(item) {
+      if (item.classList.contains("selected")) {
+        selectedServiceId = parseInt(item.getAttribute("data-id"), 10);
+      }
+      item.addEventListener("click", function() {
+        serviceItems.forEach(function(s) { s.classList.remove("selected"); });
+        item.classList.add("selected");
+        selectedServiceId = parseInt(item.getAttribute("data-id"), 10);
+        selectedSlotIso = null;
+        updateSubmitState();
+        fetchSlots();
+      });
+    });
+
+    dateInput.addEventListener("change", function() {
+      selectedSlotIso = null;
+      updateSubmitState();
+      fetchSlots();
+    });
+
+    nameInput.addEventListener("input", updateSubmitState);
+    phoneInput.addEventListener("input", updateSubmitState);
+
+    function updateSubmitState() {
+      const nameValid = nameInput.value.trim().length >= 2 && nameInput.value.trim().length <= 60;
+      const phoneClean = phoneInput.value.replace(/[\s\-\(\)]/g, "");
+      const phoneValid = /^[6-9]\d{9}$/.test(phoneClean);
+      const slotValid = selectedSlotIso !== null;
+      submitBtn.disabled = !(nameValid && phoneValid && slotValid && selectedServiceId);
+    }
+
+    function clearSlots() {
+      while (slotsGrid.firstChild) {
+        slotsGrid.removeChild(slotsGrid.firstChild);
+      }
+    }
+
+    function fetchSlots() {
+      showError(null);
+      clearSlots();
+      const dict = I18N[currentLang];
+
+      const chosenDate = dateInput.value;
+      if (!chosenDate || !selectedServiceId) {
+        slotsStatus.textContent = dict.date_help;
+        return;
+      }
+
+      // Check client-side off-day
+      const parts = chosenDate.split("-");
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const pyWeekday = (d.getDay() + 6) % 7;
+      if (pyWeekday === weeklyOffDayInt) {
+        slotsStatus.textContent = dict.off_day_notice;
+        return;
+      }
+
+      slotsStatus.textContent = dict.loading_slots;
+
+      const url = "/api/availability?service_id=" + encodeURIComponent(selectedServiceId) +
+                  "&date=" + encodeURIComponent(chosenDate);
+
+      fetch(url)
+        .then(function(res) {
+          return res.json().then(function(data) {
+            return { ok: res.ok, status: res.status, data: data };
+          });
+        })
+        .then(function(result) {
+          clearSlots();
+          if (!result.ok) {
+            slotsStatus.textContent = result.data.detail || dict.no_slots;
+            return;
+          }
+
+          const resp = result.data;
+          if (resp.is_off_day) {
+            slotsStatus.textContent = dict.off_day_notice;
+            return;
+          }
+
+          if (!resp.slots || resp.slots.length === 0) {
+            slotsStatus.textContent = dict.no_slots;
+            return;
+          }
+
+          slotsStatus.textContent = resp.slots.length + " " + dict.slots_available;
+
+          resp.slots.forEach(function(slot) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "slot-btn";
+            btn.textContent = slot.time;
+            btn.setAttribute("data-iso", slot.iso_start);
+
+            btn.addEventListener("click", function() {
+              const allSlotBtns = slotsGrid.querySelectorAll(".slot-btn");
+              allSlotBtns.forEach(function(b) { b.classList.remove("selected"); });
+              btn.classList.add("selected");
+              selectedSlotIso = slot.iso_start;
+              updateSubmitState();
+            });
+
+            slotsGrid.appendChild(btn);
+          });
+        })
+        .catch(function() {
+          slotsStatus.textContent = dict.server_error;
+        });
+    }
+
+    // Submit Booking
+    submitBtn.addEventListener("click", function() {
+      showError(null);
+      const dict = I18N[currentLang];
+      submitBtn.disabled = true;
+      submitBtn.textContent = dict.btn_in_progress;
+
+      const payload = {
+        service_id: selectedServiceId,
+        start_at: selectedSlotIso,
+        name: nameInput.value.trim(),
+        phone: phoneInput.value.trim()
+      };
+
+      fetch("/api/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, status: res.status, data: data };
+        });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          submitBtn.textContent = dict.btn_confirm;
+          submitBtn.disabled = false;
+          if (result.status === 409) {
+            showError(dict.slot_conflict);
+            fetchSlots();
+          } else {
+            showError(result.data.detail || dict.server_error);
+          }
+          return;
+        }
+
+        const conf = result.data;
+        document.getElementById("booking-flow").classList.add("hidden");
+        const confCard = document.getElementById("confirmation-card");
+
+        document.getElementById("conf-name").textContent = conf.customer_name;
+        document.getElementById("conf-phone").textContent = conf.phone;
+        document.getElementById("conf-service").textContent = conf.service_name;
+        document.getElementById("conf-price").textContent = "₹" + conf.price_inr;
+        document.getElementById("conf-start").textContent = new Date(conf.start_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+        document.getElementById("conf-end").textContent = new Date(conf.end_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+        const cancelLink = document.getElementById("conf-cancel-link");
+        cancelLink.setAttribute("href", conf.cancel_url);
+
+        // Build WhatsApp share links
+        const dtFormatted = new Date(conf.start_at).toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          dateStyle: "medium",
+          timeStyle: "short"
+        });
+        const fullCancelUrl = window.location.origin + conf.cancel_url;
+
+        let customerMsg = "";
+        let ownerMsg = "";
+
+        if (currentLang === "mr") {
+          customerMsg =
+            "💈 *" + shopName + "*\n" +
+            "✅ *बुकिंग निश्चित झाली!*\n\n" +
+            "👤 ग्राहक: " + conf.customer_name + "\n" +
+            "✂️ सेवा: " + conf.service_name + "\n" +
+            "💰 रक्कम: ₹" + conf.price_inr + "\n" +
+            "📅 तारीख आणि वेळ: " + dtFormatted + "\n\n" +
+            "🔗 रद्द करण्याची लिंक:\n" + fullCancelUrl + "\n\n" +
+            "धन्यवाद! कृपया वेळेवर पोहोचा.";
+
+          ownerMsg =
+            "नमस्ते राजू भाऊ! मी बुकिंग केली आहे:\n" +
+            "👤 नाव: " + conf.customer_name + "\n" +
+            "📞 मोबाईल: " + conf.phone + "\n" +
+            "✂️ सेवा: " + conf.service_name + " (₹" + conf.price_inr + ")\n" +
+            "📅 वेळ: " + dtFormatted;
+        } else if (currentLang === "hi") {
+          customerMsg =
+            "💈 *" + shopName + "*\n" +
+            "✅ *बुकिंग कन्फर्म हो गई!*\n\n" +
+            "👤 ग्राहक: " + conf.customer_name + "\n" +
+            "✂️ सर्विस: " + conf.service_name + "\n" +
+            "💰 मूल्य: ₹" + conf.price_inr + "\n" +
+            "📅 समय: " + dtFormatted + "\n\n" +
+            "🔗 कैंसिल लिंक:\n" + fullCancelUrl + "\n\n" +
+            "धन्यवाद! कृपया समय पर पहुंचें।";
+
+          ownerMsg =
+            "नमस्ते राजू भैया! मैंने बुकिंग की है:\n" +
+            "👤 नाम: " + conf.customer_name + "\n" +
+            "📞 मोबाइल: " + conf.phone + "\n" +
+            "✂️ सर्विस: " + conf.service_name + " (₹" + conf.price_inr + ")\n" +
+            "📅 समय: " + dtFormatted;
+        } else {
+          customerMsg =
+            "💈 *" + shopName + "*\n" +
+            "✅ *Booking Confirmed!*\n\n" +
+            "👤 Customer: " + conf.customer_name + "\n" +
+            "✂️ Service: " + conf.service_name + "\n" +
+            "💰 Price: ₹" + conf.price_inr + "\n" +
+            "📅 Date & Time: " + dtFormatted + "\n\n" +
+            "🔗 Cancel Link:\n" + fullCancelUrl + "\n\n" +
+            "Thank you! Please arrive on time.";
+
+          ownerMsg =
+            "Hello Raju! I just booked an appointment:\n" +
+            "👤 Name: " + conf.customer_name + "\n" +
+            "📞 Mobile: " + conf.phone + "\n" +
+            "✂️ Service: " + conf.service_name + " (₹" + conf.price_inr + ")\n" +
+            "📅 Time: " + dtFormatted;
+        }
+
+        const shareBtn = document.getElementById("wa-share-btn");
+        shareBtn.setAttribute("href", "https://api.whatsapp.com/send?text=" + encodeURIComponent(customerMsg));
+
+        const ownerBtn = document.getElementById("wa-owner-btn");
+        ownerBtn.setAttribute("href", "https://wa.me/" + shopPhone + "?text=" + encodeURIComponent(ownerMsg));
+
+        confCard.classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
+      .catch(function() {
+        submitBtn.textContent = dict.btn_confirm;
+        submitBtn.disabled = false;
+        showError(dict.server_error);
+      });
+    });
+
+    // Initialize with saved or default language
+    setLanguage(currentLang);
+  })();
+</script>
+{% endblock %}
