@@ -26,7 +26,7 @@ LOCAL_TZ = ZoneInfo(TIMEZONE_NAME)
 DATABASE_PATH = os.getenv("DATABASE_PATH", "barbershop.db")
 
 # Server host and port
-HOST = os.getenv("HOST", "127.0.0.1")
+HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 
 # Admin security
