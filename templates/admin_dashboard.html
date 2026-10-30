@@ -21,6 +21,12 @@
   <a href="/" target="_blank" class="dash-tab" style="margin-left: auto; color: var(--primary-accent);">View Booking Page ↗</a>
 </div>
 
+{% if is_default_password %}
+<div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.875rem; color: #92400e;">
+  ⚠️ <strong>Security Notice:</strong> Aap abhi default password (<code>raju123</code>) use kar rahe hain. Kripya Render dashboard ke <strong>Environment</strong> tab me jaakar strong <code>ADMIN_PASSWORD</code> aur <code>SECRET_KEY</code> set karein.
+</div>
+{% endif %}
+
 <!-- Daily Stats -->
 <div class="stats-grid">
   <div class="stat-card">

@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import time
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -7,6 +8,10 @@ from slowapi.util import get_remote_address
 
 # Load environment configuration
 load_dotenv()
+
+# Environment mode
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+IS_PRODUCTION = bool(os.getenv("RENDER") or ENVIRONMENT == "production")
 
 # Shop Details
 SHOP_NAME = os.getenv("SHOP_NAME", "Raju Barber Shop, Bhusawal")
@@ -29,9 +34,24 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "barbershop.db")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 
-# Admin security
+# Admin security & production safeguards
+DEFAULT_SECRET_KEY = "bhusawal_barber_secret_key_raju"
+configured_secret_key = os.getenv("SECRET_KEY")
+
+if not configured_secret_key or configured_secret_key == DEFAULT_SECRET_KEY:
+    if IS_PRODUCTION:
+        # In production, never fall back to the static repository key.
+        # Generate an ephemeral cryptographically strong 256-bit key automatically.
+        SECRET_KEY = secrets.token_hex(32)
+        print("[SECURITY] Generated secure ephemeral SECRET_KEY for production.")
+    else:
+        SECRET_KEY = DEFAULT_SECRET_KEY
+else:
+    SECRET_KEY = configured_secret_key
+
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "raju123")
-SECRET_KEY = os.getenv("SECRET_KEY", "bhusawal_barber_secret_key_raju")
+if IS_PRODUCTION and ADMIN_PASSWORD == "raju123":
+    print("[SECURITY WARNING] Default 'raju123' password is in use in production! Please set ADMIN_PASSWORD in Render Environment Variables.")
 
 # 15-minute slot grid
 SLOT_GRANULARITY_MINUTES = 15

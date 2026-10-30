@@ -352,7 +352,8 @@ def admin_dashboard(
             "shop_name": SHOP_NAME,
             "target_date": target_date_str,
             "bookings": [dict(b) for b in bookings],
-            "stats": stats
+            "stats": stats,
+            "is_default_password": (ADMIN_PASSWORD == "raju123")
         }
     )
 
