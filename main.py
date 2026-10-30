@@ -209,7 +209,9 @@ def cancel_confirm(request: Request, token: str, conn: sqlite3.Connection = Depe
 # ==================== REST API Endpoints ====================
 
 @app.get("/api/availability", response_model=AvailabilityResponse)
+@limiter.limit("20/minute")
 def check_availability(
+    request: Request,
     service_id: int = Query(..., gt=0),
     booking_date: str = Query(..., alias="date", description="YYYY-MM-DD"),
     conn: sqlite3.Connection = Depends(get_db)

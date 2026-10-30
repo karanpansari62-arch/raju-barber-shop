@@ -339,3 +339,38 @@ def test_rate_limiting_enforced(test_db, get_valid_future_date):
 
     # 6th request from same IP must hit 429
     assert 429 in statuses, f"Expected 429 rate limit error, got: {statuses}"
+
+def test_availability_rate_limiting(test_db, get_valid_future_date):
+    """Verifies that /api/availability enforces 20/minute rate limit against scraping/spam."""
+    from config import limiter
+    from fastapi.testclient import TestClient
+    from main import app
+    from database import get_connection, get_db
+
+    conn = get_connection(test_db)
+    haircut = conn.execute("SELECT id FROM services WHERE name = 'Haircut'").fetchone()
+    target_date = get_valid_future_date(days_ahead=2)
+
+    def override_get_db():
+        c = get_connection(test_db)
+        try:
+            yield c
+        finally:
+            c.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    limiter.enabled = True
+    limiter.reset()
+
+    with TestClient(app) as test_client:
+        statuses = []
+        for _ in range(21):
+            r = test_client.get(f"/api/availability?service_id={haircut['id']}&date={target_date.isoformat()}")
+            statuses.append(r.status_code)
+
+    limiter.enabled = False
+    app.dependency_overrides.clear()
+    conn.close()
+
+    # The 21st request from same IP within a minute must return HTTP 429
+    assert 429 in statuses, f"Expected 429 rate limit on availability API, got {statuses}"
