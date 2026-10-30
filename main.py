@@ -21,7 +21,7 @@ from config import (
     MAX_DAYS_AHEAD,
     limiter
 )
-from database import init_db, get_db
+from database import init_db, get_db, get_connection
 from models import BookingCreateRequest, BookingResponse, AvailabilityResponse
 from availability import get_available_slots, get_now_ist
 from booking_service import (
@@ -39,6 +39,17 @@ from config import ADMIN_PASSWORD, LOCAL_TZ
 async def lifespan(app: FastAPI):
     # Ensure database tables exist on startup
     init_db()
+    # Auto-seed standard services if empty
+    conn = get_connection()
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM services").fetchone()[0]
+        if count == 0:
+            from seed import seed_services
+            seed_services()
+    except Exception as e:
+        print(f"Warning during auto-seed: {e}")
+    finally:
+        conn.close()
     yield
 
 app = FastAPI(
