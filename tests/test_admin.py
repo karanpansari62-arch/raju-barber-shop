@@ -135,3 +135,34 @@ def test_admin_services_crud(client, test_db):
     row_toggled = conn.execute("SELECT is_active FROM services WHERE id = ?", (row["id"],)).fetchone()
     assert row_toggled["is_active"] == 0
     conn.close()
+
+def test_admin_login_rate_limiting(test_db):
+    """Verifies that 6th rapid login attempt from same IP triggers 429 RateLimitExceeded."""
+    from config import limiter
+    from fastapi.testclient import TestClient
+    from main import app
+    from database import get_connection, get_db
+
+    def override_get_db():
+        c = get_connection(test_db)
+        try:
+            yield c
+        finally:
+            c.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    limiter.enabled = True
+    limiter.reset()
+
+    with TestClient(app) as test_client:
+        statuses = []
+        for _ in range(6):
+            r = test_client.post("/admin/login", data={"password": "wrong_password"})
+            statuses.append(r.status_code)
+
+    limiter.enabled = False
+    app.dependency_overrides.clear()
+
+    # The 6th attempt must be rejected with 429 Too Many Requests
+    assert 429 in statuses, f"Expected 429 rate limit error on brute-force login, got {statuses}"
+

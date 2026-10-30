@@ -61,7 +61,6 @@ app = FastAPI(
 
 # Rate limiting
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Security hardening middleware
 @app.middleware("http")
@@ -75,6 +74,21 @@ async def add_security_headers(request: Request, call_next):
 # Static CSS
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Rate limit exception handler
+@app.exception_handler(RateLimitExceeded)
+async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    if "/admin/login" in request.url.path:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context={
+                "error": "Bohot saare login attempts! Security ke liye login 1 minute ke liye block kiya gaya hai.",
+                "shop_name": SHOP_NAME
+            },
+            status_code=429
+        )
+    return _rate_limit_exceeded_handler(request, exc)
 
 # ==================== Customer UI Views ====================
 
@@ -272,13 +286,16 @@ def admin_login_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin_login.html", context={"error": None, "shop_name": SHOP_NAME})
 
 @app.post("/admin/login", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 def admin_login_submit(request: Request, password: str = Form(...)):
     if password.strip() == ADMIN_PASSWORD:
         response = RedirectResponse(url="/admin", status_code=303)
+        is_secure = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
         response.set_cookie(
             key="admin_session",
             value=get_admin_token(),
             httponly=True,
+            secure=is_secure,
             samesite="lax",
             max_age=60 * 60 * 24 * 30  # 30 days
         )
