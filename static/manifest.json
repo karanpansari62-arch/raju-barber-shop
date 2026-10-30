@@ -1,0 +1,22 @@
+{
+  "name": "Raju Barber Shop",
+  "short_name": "Raju Barber",
+  "description": "Raju Barber Shop Online Appointment Booking & Admin Portal",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
