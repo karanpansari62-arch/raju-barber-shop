@@ -11,12 +11,14 @@
     <button type="button" class="lang-btn" data-lang="en">English</button>
   </div>
 
-  <header class="header">
-    <h1>💈 {{ shop_name }}</h1>
+  <!-- Classy Barber Aesthetic Header -->
+  <header class="header luxury-header">
+    <div class="shop-badge">💈 PREMIUM SALON & GROOMING</div>
+    <h1>{{ shop_name }}</h1>
     <div class="shop-meta" id="header-timings">Bhusawal, Maharashtra • Timings: {{ open_time }} to {{ close_time }}</div>
-    <div style="margin-top: 6px;">
-      <span class="badge badge-danger" id="header-off-day">Weekly Off: {{ weekly_off_day }}</span>
-      <span class="badge" style="background: #fef3c7; color: #92400e;" id="header-break">Lunch Break: {{ break_start }} - {{ break_end }}</span>
+    <div class="shop-badges-row">
+      <span class="badge badge-off" id="header-off-day">Weekly Off: {{ weekly_off_day }}</span>
+      <span class="badge badge-break" id="header-break">Lunch Break: {{ break_start }} - {{ break_end }}</span>
     </div>
   </header>
 
@@ -37,11 +39,23 @@
              data-duration="{{ s.duration_minutes }}"
              data-price="{{ s.price_inr }}"
              data-name="{{ s.name }}">
-          <div>
-            <div class="name">{{ s.name }}</div>
-            <div class="details">{{ s.duration_minutes }} mins</div>
+          <div class="service-left">
+            <div class="service-icon-box">
+              {% if "combo" in s.name.lower() or ("hair" in s.name.lower() and "beard" in s.name.lower()) %}💈
+              {% elif "hair" in s.name.lower() %}✂️
+              {% elif "beard" in s.name.lower() %}🧔
+              {% elif "massage" in s.name.lower() or "spa" in s.name.lower() %}💆
+              {% else %}✨{% endif %}
+            </div>
+            <div>
+              <div class="name">{{ s.name }}</div>
+              <div class="details">⏱ {{ s.duration_minutes }} mins</div>
+            </div>
           </div>
-          <div class="price">₹{{ s.price_inr }}</div>
+          <div class="service-right">
+            <div class="price">₹{{ s.price_inr }}</div>
+            <div class="check-indicator">✓</div>
+          </div>
         </div>
         {% endfor %}
       </div>
@@ -70,7 +84,7 @@
     </section>
 
     <!-- Step 3: Customer Information -->
-    <section class="card">
+    <section class="card" id="step-3-section">
       <div class="step-title">
         <span class="step-num">3</span>
         <span data-i18n="step_3_title">तुमचे नाव आणि मोबाईल नंबर (Contact Details)</span>
@@ -90,64 +104,84 @@
       <button type="button" id="submit-btn" class="btn btn-primary" data-i18n="btn_confirm" disabled>अपॉइंटमेंट निश्चित करा (Confirm)</button>
     </section>
   </form>
+
+  <!-- Sticky Mobile Bar -->
+  <div id="sticky-bar" class="sticky-booking-bar hidden">
+    <div class="sticky-info">
+      <div id="sticky-service-title" class="sticky-title">Service Selected</div>
+      <div id="sticky-slot-title" class="sticky-subtitle">Select slot</div>
+    </div>
+    <button type="button" id="sticky-action-btn" class="btn btn-primary sticky-btn">
+      Confirm ➔
+    </button>
+  </div>
 </div>
 
-<!-- Step 4: Booking Confirmation Card -->
-<div id="confirmation-card" class="card hidden">
-  <div style="text-align: center; margin-bottom: 16px;">
-    <span class="badge badge-success" id="conf-badge" style="font-size: 0.95rem; padding: 6px 12px;" data-i18n="conf_title">✓ बुकिंग निश्चित झाली! (Confirmed)</span>
+<!-- Step 4: Digital Receipt / VIP Appointment Ticket -->
+<div id="confirmation-card" class="ticket-card hidden">
+  <div class="ticket-top">
+    <span class="ticket-badge-vip">⭐ VIP APPOINTMENT PASS</span>
+    <h2>💈 {{ shop_name }}</h2>
+    <p id="conf-badge" class="ticket-subtext" data-i18n="conf_title">✓ बुकिंग निश्चित झाली! (Confirmed)</p>
   </div>
 
-  <h2 style="text-align: center; font-size: 1.3rem; margin-bottom: 4px;">{{ shop_name }}</h2>
-  <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;" data-i18n="conf_subtitle">
-    तुमची बुकिंग सुरक्षित झाली आहे. खालील माहिती जपून ठेवा.
-  </p>
-
-  <div class="info-row">
-    <span class="info-label" data-i18n="conf_cust_name">ग्राहक नाव (Customer)</span>
-    <span class="info-val" id="conf-name"></span>
-  </div>
-  <div class="info-row">
-    <span class="info-label" data-i18n="conf_phone">मोबाईल (Mobile)</span>
-    <span class="info-val" id="conf-phone"></span>
-  </div>
-  <div class="info-row">
-    <span class="info-label" data-i18n="conf_service">सेवा (Service)</span>
-    <span class="info-val" id="conf-service"></span>
-  </div>
-  <div class="info-row">
-    <span class="info-label" data-i18n="conf_amount">रक्कम (Amount)</span>
-    <span class="info-val" id="conf-price"></span>
-  </div>
-  <div class="info-row">
-    <span class="info-label" data-i18n="conf_start">वेळ (Start Time)</span>
-    <span class="info-val" id="conf-start"></span>
-  </div>
-  <div class="info-row">
-    <span class="info-label" data-i18n="conf_end">अपेक्षित समाप्ती (End Time)</span>
-    <span class="info-val" id="conf-end"></span>
-  </div>
-  <div class="info-row">
-    <span class="info-label">Status</span>
-    <span class="info-val" style="color: #059669; font-weight: 700;" data-i18n="conf_status">CONFIRMED</span>
+  <div class="ticket-cutout">
+    <span class="cutout-circle left"></span>
+    <span class="cutout-dash"></span>
+    <span class="cutout-circle right"></span>
   </div>
 
-  <!-- WhatsApp Confirmation & Share Buttons -->
-  <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-    <a id="wa-share-btn" class="btn" href="#" target="_blank" style="background-color: #25D366; color: #fff; font-weight: 600; text-decoration: none;" data-i18n="conf_wa_share">
-      📱 WhatsApp वर स्लिप सेव्ह / शेअर करा
-    </a>
-    <a id="wa-owner-btn" class="btn" href="#" target="_blank" style="background-color: #128C7E; color: #fff; font-weight: 600; text-decoration: none;" data-i18n="conf_wa_owner">
-      💬 राजू भाऊंना WhatsApp वर कळवा
-    </a>
-  </div>
+  <div class="ticket-body">
+    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px;" data-i18n="conf_subtitle">
+      तुमची बुकिंग सुरक्षित झाली आहे. खालील माहिती जपून ठेवा.
+    </p>
 
-  <div style="margin-top: 20px; padding: 14px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: var(--radius-sm);">
-    <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;" data-i18n="conf_cancel_notice">कधी रद्द करायचे असल्यास या लिंकवरून करा:</div>
-    <a id="conf-cancel-link" class="btn btn-danger" href="#" target="_blank" style="margin-top: 8px;" data-i18n="conf_cancel_btn">अपॉइंटमेंट रद्द करण्याची लिंक (Cancel Link)</a>
-  </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="conf_cust_name">ग्राहक नाव (Customer)</span>
+      <span class="info-val" id="conf-name"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="conf_phone">मोबाईल (Mobile)</span>
+      <span class="info-val" id="conf-phone"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="conf_service">सेवा (Service)</span>
+      <span class="info-val" id="conf-service"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="conf_amount">रक्कम (Amount)</span>
+      <span class="info-val highlight-price" id="conf-price"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="conf_start">वेळ (Start Time)</span>
+      <span class="info-val" id="conf-start"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="conf_end">अपेक्षित समाप्ती (End Time)</span>
+      <span class="info-val" id="conf-end"></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Status</span>
+      <span class="info-val status-confirmed" data-i18n="conf_status">CONFIRMED</span>
+    </div>
 
-  <a href="/" class="btn btn-outline" style="margin-top: 14px;" data-i18n="conf_new_booking">नवीन बुकिंग करा (Book Another)</a>
+    <!-- WhatsApp Confirmation & Share Buttons -->
+    <div class="wa-action-box">
+      <a id="wa-share-btn" class="btn btn-whatsapp" href="#" target="_blank" data-i18n="conf_wa_share">
+        <span>💬</span> WhatsApp वर स्लिप सेव्ह / शेअर करा
+      </a>
+      <a id="wa-owner-btn" class="btn btn-whatsapp-owner" href="#" target="_blank" data-i18n="conf_wa_owner">
+        <span>💈</span> राजू भाऊंना WhatsApp वर कळवा
+      </a>
+    </div>
+
+    <div class="cancel-notice-box">
+      <div class="cancel-notice-title" data-i18n="conf_cancel_notice">कधी रद्द करायचे असल्यास या लिंकवरून करा:</div>
+      <a id="conf-cancel-link" class="btn btn-danger-soft" href="#" target="_blank" data-i18n="conf_cancel_btn">अपॉइंटमेंट रद्द करण्याची लिंक (Cancel Link)</a>
+    </div>
+
+    <a href="/" class="btn btn-outline" style="margin-top: 14px;" data-i18n="conf_new_booking">नवीन बुकिंग करा (Book Another)</a>
+  </div>
 </div>
 {% endblock %}
 
@@ -365,12 +399,52 @@
     nameInput.addEventListener("input", updateSubmitState);
     phoneInput.addEventListener("input", updateSubmitState);
 
+    const stickyBar = document.getElementById("sticky-bar");
+    const stickyServiceTitle = document.getElementById("sticky-service-title");
+    const stickySlotTitle = document.getElementById("sticky-slot-title");
+    const stickyActionBtn = document.getElementById("sticky-action-btn");
+
+    function updateStickyBar() {
+      if (!stickyBar) return;
+      const selectedItem = document.querySelector(".service-item.selected");
+      if (selectedItem) {
+        const sName = selectedItem.getAttribute("data-name");
+        const sPrice = selectedItem.getAttribute("data-price");
+        stickyServiceTitle.textContent = sName + " • ₹" + sPrice;
+      }
+      if (selectedSlotIso) {
+        const slotTime = selectedSlotIso.substring(11, 16);
+        stickySlotTitle.textContent = "Time: " + slotTime;
+        stickyBar.classList.remove("hidden");
+      } else {
+        stickySlotTitle.textContent = "Select time slot";
+        stickyBar.classList.add("hidden");
+      }
+    }
+
+    if (stickyActionBtn) {
+      stickyActionBtn.addEventListener("click", function() {
+        const step3 = document.getElementById("step-3-section");
+        if (!nameInput.value.trim() || !phoneInput.value.trim()) {
+          if (step3) step3.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (!nameInput.value.trim()) {
+            nameInput.focus();
+          } else {
+            phoneInput.focus();
+          }
+        } else {
+          submitBtn.click();
+        }
+      });
+    }
+
     function updateSubmitState() {
       const nameValid = nameInput.value.trim().length >= 2 && nameInput.value.trim().length <= 60;
       const phoneClean = phoneInput.value.replace(/[\s\-\(\)]/g, "");
       const phoneValid = /^[6-9]\d{9}$/.test(phoneClean);
       const slotValid = selectedSlotIso !== null;
       submitBtn.disabled = !(nameValid && phoneValid && slotValid && selectedServiceId);
+      updateStickyBar();
     }
 
     function clearSlots() {
@@ -492,6 +566,7 @@
 
         const conf = result.data;
         document.getElementById("booking-flow").classList.add("hidden");
+        if (stickyBar) stickyBar.classList.add("hidden");
         const confCard = document.getElementById("confirmation-card");
 
         document.getElementById("conf-name").textContent = conf.customer_name;
