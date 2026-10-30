@@ -33,7 +33,7 @@ from booking_service import (
     NotFoundError
 )
 from admin_auth import get_admin_token, is_admin_authenticated, require_admin
-from config import ADMIN_PASSWORD, LOCAL_TZ
+from config import ADMIN_PASSWORD, LOCAL_TZ, IS_PRODUCTION
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -65,10 +65,17 @@ app.state.limiter = limiter
 # Security hardening middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
+    # Enforce HTTPS redirect in production if request comes via plaintext HTTP
+    if IS_PRODUCTION and request.headers.get("x-forwarded-proto") == "http":
+        url = request.url.replace(scheme="https")
+        return RedirectResponse(url=str(url), status_code=301)
+
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if IS_PRODUCTION or request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
 # Static CSS
@@ -290,12 +297,12 @@ def admin_login_page(request: Request):
 def admin_login_submit(request: Request, password: str = Form(...)):
     if password.strip() == ADMIN_PASSWORD:
         response = RedirectResponse(url="/admin", status_code=303)
-        is_secure = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+        use_secure = IS_PRODUCTION or request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
         response.set_cookie(
             key="admin_session",
             value=get_admin_token(),
             httponly=True,
-            secure=is_secure,
+            secure=use_secure,
             samesite="lax",
             max_age=60 * 60 * 24 * 30  # 30 days
         )
@@ -311,7 +318,8 @@ def admin_login_submit(request: Request, password: str = Form(...)):
 @app.post("/admin/logout")
 def admin_logout(request: Request):
     response = RedirectResponse(url="/admin/login", status_code=303)
-    response.delete_cookie("admin_session")
+    use_secure = IS_PRODUCTION or request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+    response.delete_cookie("admin_session", httponly=True, samesite="lax", secure=use_secure)
     return response
 
 @app.get("/admin", response_class=HTMLResponse)

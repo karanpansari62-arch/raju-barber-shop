@@ -29,6 +29,21 @@ def test_admin_login_success_and_logout(client):
     assert unauth.status_code == 303
     assert unauth.headers["location"] == "/admin/login"
 
+def test_admin_cookie_secure_flags(client):
+    """Verifies that Set-Cookie includes HttpOnly, Secure, and SameSite=Lax over HTTPS."""
+    res = client.post(
+        "/admin/login",
+        data={"password": "raju123"},
+        headers={"x-forwarded-proto": "https"},
+        follow_redirects=False
+    )
+    assert res.status_code == 303
+    set_cookie = res.headers.get("set-cookie", "").lower()
+    assert "admin_session=" in set_cookie
+    assert "httponly" in set_cookie
+    assert "secure" in set_cookie
+    assert "samesite=lax" in set_cookie
+
 def test_admin_update_booking_status(client, test_db, get_valid_future_date):
     conn = get_connection(test_db)
     haircut = conn.execute("SELECT id, price_inr FROM services WHERE name = 'Haircut'").fetchone()
