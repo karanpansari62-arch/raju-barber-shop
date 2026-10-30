@@ -44,6 +44,39 @@ def test_admin_cookie_secure_flags(client):
     assert "secure" in set_cookie
     assert "samesite=lax" in set_cookie
 
+def test_admin_token_expiry_and_tampering(client):
+    """Verifies that expired or tampered session tokens are rejected."""
+    import time
+    from admin_auth import get_admin_token
+
+    # 1. Expired token (issued 15 days ago)
+    fifteen_days_ago = int(time.time()) - (60 * 60 * 24 * 15)
+    expired_token = get_admin_token(timestamp=fifteen_days_ago)
+    client.cookies.set("admin_session", expired_token)
+    res = client.get("/admin", follow_redirects=False)
+    assert res.status_code == 303
+    assert res.headers["location"] == "/admin/login"
+
+    # 2. Tampered signature
+    valid_token = get_admin_token()
+    ts, _ = valid_token.split(".", 1)
+    fake_token = f"{ts}.badsignature1234567890abcdef"
+    client.cookies.set("admin_session", fake_token)
+    res = client.get("/admin", follow_redirects=False)
+    assert res.status_code == 303
+    assert res.headers["location"] == "/admin/login"
+
+    # 3. Malformed token (no period)
+    client.cookies.set("admin_session", "malformedtokenwithoutdot")
+    res = client.get("/admin", follow_redirects=False)
+    assert res.status_code == 303
+    assert res.headers["location"] == "/admin/login"
+
+    # 4. Valid fresh token succeeds
+    client.cookies.set("admin_session", valid_token)
+    res = client.get("/admin", follow_redirects=False)
+    assert res.status_code == 200
+
 def test_admin_update_booking_status(client, test_db, get_valid_future_date):
     conn = get_connection(test_db)
     haircut = conn.execute("SELECT id, price_inr FROM services WHERE name = 'Haircut'").fetchone()

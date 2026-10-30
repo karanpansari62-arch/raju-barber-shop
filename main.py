@@ -32,7 +32,7 @@ from booking_service import (
     ValidationError,
     NotFoundError
 )
-from admin_auth import get_admin_token, is_admin_authenticated, require_admin
+from admin_auth import get_admin_token, is_admin_authenticated, require_admin, SESSION_MAX_AGE_SECONDS
 from config import ADMIN_PASSWORD, LOCAL_TZ, IS_PRODUCTION
 
 @asynccontextmanager
@@ -304,7 +304,7 @@ def admin_login_submit(request: Request, password: str = Form(...)):
             httponly=True,
             secure=use_secure,
             samesite="lax",
-            max_age=60 * 60 * 24 * 30  # 30 days
+            max_age=SESSION_MAX_AGE_SECONDS
         )
         return response
     return templates.TemplateResponse(
