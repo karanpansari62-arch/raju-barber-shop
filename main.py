@@ -78,6 +78,15 @@ templates = Jinja2Templates(directory="templates")
 
 # ==================== Customer UI Views ====================
 
+@app.head("/")
+def head_index():
+    return HTMLResponse(content="", status_code=200)
+
+@app.get("/healthz")
+@app.head("/healthz")
+def healthcheck():
+    return {"status": "ok"}
+
 @app.get("/", response_class=HTMLResponse)
 def index_page(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     """
