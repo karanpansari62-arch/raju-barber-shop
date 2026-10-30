@@ -329,18 +329,123 @@ body {
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
 }
 
+/* Direct Time Typing Input Box */
+.time-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.time-input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 1.15rem;
+  color: var(--primary-accent);
+  pointer-events: none;
+  user-select: none;
+}
+
+.time-direct-input {
+  width: 100%;
+  padding: 12px 42px 12px 42px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background-color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.time-direct-input:focus {
+  border-color: var(--primary-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18);
+  background-color: #fff;
+}
+
+.time-clear-btn {
+  position: absolute;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.time-clear-btn:hover {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+/* Quick Period Filter Pills */
+.time-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filter-pill {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--border-color);
+  background: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filter-pill:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  transform: translateY(-1px);
+}
+
+.filter-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
 /* Slot Grid */
 .slots-container {
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .slots-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 10px;
-  max-height: 250px;
+  max-height: 270px;
   overflow-y: auto;
   padding: 6px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.slots-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.slots-grid::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
 }
 
 .slot-btn {

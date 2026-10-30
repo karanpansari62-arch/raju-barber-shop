@@ -76,6 +76,23 @@
 
       <div class="form-group">
         <label class="form-label" data-i18n="available_slots">उपलब्ध वेळा (Available Slots)</label>
+
+        <!-- Direct Time Typing & Search Box -->
+        <div class="time-input-box">
+          <span class="time-input-icon">⏱</span>
+          <input type="text" id="time-direct-input" class="form-input time-direct-input" 
+                 placeholder="थेट वेळ टाईप करा (Type time e.g. 19:00, 7 PM)..." 
+                 autocomplete="off">
+          <button type="button" id="time-clear-btn" class="time-clear-btn hidden" title="Clear">✕</button>
+        </div>
+
+        <!-- Quick Filter Tabs (All / Morning / Evening) -->
+        <div class="time-filter-pills">
+          <button type="button" class="filter-pill active" data-period="all" data-i18n="filter_all">सर्व (All)</button>
+          <button type="button" class="filter-pill" data-period="morning" data-i18n="filter_morning">🌅 सकाळ (10 AM - 2 PM)</button>
+          <button type="button" class="filter-pill" data-period="evening" data-i18n="filter_evening">🌆 संध्याकाळ (3 PM - 9 PM)</button>
+        </div>
+
         <div id="slots-status" class="help-text">Slots load ho rahe hain...</div>
         <div class="slots-container">
           <div id="slots-grid" class="slots-grid"></div>
@@ -234,7 +251,11 @@
         slots_available: "वेळा उपलब्ध आहेत:",
         loading_slots: "वेळा तपासत आहोत...",
         slot_conflict: "वेळ कन्फ्लिक्ट: ही वेळ आत्ताच दुसऱ्या ग्राहकाने बुक केली. कृपया दुसरी वेळ निवडा.",
-        server_error: "इंटरनेट किंवा सर्व्हर समस्या. कृपया पुन्हा प्रयत्न करा."
+        server_error: "इंटरनेट किंवा सर्व्हर समस्या. कृपया पुन्हा प्रयत्न करा.",
+        time_search_placeholder: "थेट वेळ टाईप करा (Type time उदा. 19:00, 7 PM)...",
+        filter_all: "सर्व (All)",
+        filter_morning: "🌅 सकाळ (10 AM - 2 PM)",
+        filter_evening: "🌆 संध्याकाळ (3 PM - 9 PM)"
       },
       hi: {
         timings: "भुसावल, महाराष्ट्र • समय: " + openTimeStr + " से " + closeTimeStr,
@@ -271,7 +292,11 @@
         slots_available: "स्लॉट्स उपलब्ध हैं:",
         loading_slots: "स्लॉट्स चेक हो रहे हैं...",
         slot_conflict: "स्लॉट कन्फ्लिक्ट: यह स्लॉट अभी किसी और ने बुक कर लिया। कृपया दूसरा समय चुनें।",
-        server_error: "इंटरनेट या सर्वर समस्या। कृपया दोबारा कोशिश करें।"
+        server_error: "इंटरनेट या सर्वर समस्या। कृपया दोबारा कोशिश करें।",
+        time_search_placeholder: "समय सीधे टाइप करें (Type time जैसे 19:00, 7 PM)...",
+        filter_all: "सभी (All)",
+        filter_morning: "🌅 सुबह (10 AM - 2 PM)",
+        filter_evening: "🌆 शाम (3 PM - 9 PM)"
       },
       en: {
         timings: "Bhusawal, Maharashtra • Timings: " + openTimeStr + " to " + closeTimeStr,
@@ -308,7 +333,11 @@
         slots_available: "slots available:",
         loading_slots: "Checking available slots...",
         slot_conflict: "Slot Conflict: This slot was just taken. Please pick another time.",
-        server_error: "Network or server error. Please try again."
+        server_error: "Network or server error. Please try again.",
+        time_search_placeholder: "Type time directly (e.g. 19:00, 7 PM)...",
+        filter_all: "All",
+        filter_morning: "🌅 Morning (10 AM - 2 PM)",
+        filter_evening: "🌆 Evening (3 PM - 9 PM)"
       }
     };
 
@@ -323,6 +352,11 @@
     const nameInput = document.getElementById("cust-name");
     const phoneInput = document.getElementById("cust-phone");
     const submitBtn = document.getElementById("submit-btn");
+
+    const timeDirectInput = document.getElementById("time-direct-input");
+    const timeClearBtn = document.getElementById("time-clear-btn");
+    const filterPills = document.querySelectorAll(".filter-pill");
+    let currentPeriod = "all";
 
     function setLanguage(lang) {
       if (!I18N[lang]) lang = "mr";
@@ -344,6 +378,9 @@
       document.getElementById("header-break").textContent = dict.break_time;
 
       nameInput.setAttribute("placeholder", dict.cust_name_placeholder);
+      if (timeDirectInput) {
+        timeDirectInput.setAttribute("placeholder", dict.time_search_placeholder);
+      }
 
       // Translate all data-i18n elements
       document.querySelectorAll("[data-i18n]").forEach(function(el) {
@@ -510,22 +547,145 @@
             btn.className = "slot-btn";
             btn.textContent = slot.time;
             btn.setAttribute("data-iso", slot.iso_start);
+            btn.setAttribute("data-time", slot.time);
 
             btn.addEventListener("click", function() {
               const allSlotBtns = slotsGrid.querySelectorAll(".slot-btn");
               allSlotBtns.forEach(function(b) { b.classList.remove("selected"); });
               btn.classList.add("selected");
               selectedSlotIso = slot.iso_start;
+              if (timeDirectInput) {
+                timeDirectInput.value = slot.time;
+              }
+              if (timeClearBtn) {
+                timeClearBtn.classList.remove("hidden");
+              }
               updateSubmitState();
             });
 
             slotsGrid.appendChild(btn);
           });
+
+          applySlotFilters();
         })
         .catch(function() {
           slotsStatus.textContent = dict.server_error;
         });
     }
+
+    function applySlotFilters() {
+      if (!timeDirectInput) return;
+      const rawVal = (timeDirectInput.value || "").trim().toLowerCase();
+      const query = rawVal.replace(/\s+/g, "");
+      const allSlotBtns = slotsGrid.querySelectorAll(".slot-btn");
+      let visibleCount = 0;
+      let exactMatchBtn = null;
+
+      // Convert 12-hour typing (e.g. 7 or 7:00 or 7pm -> 19:00, 6:30 -> 18:30)
+      let altQuery = "";
+      const match12 = query.match(/^([1-9]|1[0-2])(?::([0-5][0-9]))?(am|pm)?$/i);
+      if (match12) {
+        let hr = parseInt(match12[1], 10);
+        const mins = match12[2] !== undefined ? match12[2] : "";
+        const meridiem = (match12[3] || "").toLowerCase();
+        if (meridiem === "pm" && hr < 12) {
+          hr += 12;
+        } else if (meridiem === "" && hr >= 1 && hr <= 9) {
+          // Shop operating hours 10:00 - 21:00: 1 to 9 means afternoon/evening (13:00 to 21:00)
+          hr += 12;
+        }
+        const hrStr = hr < 10 ? "0" + hr : "" + hr;
+        altQuery = mins ? hrStr + ":" + mins : hrStr;
+      }
+
+      allSlotBtns.forEach(function(btn) {
+        const timeVal = btn.getAttribute("data-time") || btn.textContent.trim();
+        const hr = parseInt(timeVal.split(":")[0], 10);
+
+        // Period filter (morning: < 14:00, evening: >= 15:00)
+        let periodMatch = true;
+        if (currentPeriod === "morning" && hr >= 14) periodMatch = false;
+        if (currentPeriod === "evening" && hr < 15) periodMatch = false;
+
+        // Search/direct typing filter
+        let queryMatch = true;
+        if (query) {
+          const directMatch = timeVal.toLowerCase().replace(":", "").includes(query.replace(":", "")) || timeVal.toLowerCase().includes(query);
+          const altMatch = altQuery && (timeVal.includes(altQuery) || timeVal.replace(":", "").includes(altQuery.replace(":", "")));
+          queryMatch = directMatch || altMatch;
+        }
+
+        if (periodMatch && queryMatch) {
+          btn.style.display = "";
+          visibleCount++;
+          if (query && (timeVal === query || timeVal === altQuery || timeVal.replace(":", "") === query.replace(":", ""))) {
+            exactMatchBtn = btn;
+          }
+        } else {
+          btn.style.display = "none";
+        }
+      });
+
+      // Auto-select if user typed an exact matching slot
+      if (exactMatchBtn && !exactMatchBtn.classList.contains("selected")) {
+        allSlotBtns.forEach(function(b) { b.classList.remove("selected"); });
+        exactMatchBtn.classList.add("selected");
+        selectedSlotIso = exactMatchBtn.getAttribute("data-iso");
+        updateSubmitState();
+      }
+
+      if (rawVal) {
+        if (timeClearBtn) timeClearBtn.classList.remove("hidden");
+      } else {
+        if (timeClearBtn) timeClearBtn.classList.add("hidden");
+      }
+
+      const dict = I18N[currentLang];
+      if (allSlotBtns.length > 0) {
+        if (visibleCount === 0) {
+          slotsStatus.textContent = dict.no_slots;
+        } else {
+          slotsStatus.textContent = visibleCount + " " + dict.slots_available;
+        }
+      }
+    }
+
+    if (timeDirectInput) {
+      timeDirectInput.addEventListener("input", function() {
+        applySlotFilters();
+      });
+
+      timeDirectInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          applySlotFilters();
+          if (selectedSlotIso && nameInput) {
+            nameInput.focus();
+          }
+        }
+      });
+    }
+
+    if (timeClearBtn) {
+      timeClearBtn.addEventListener("click", function() {
+        timeDirectInput.value = "";
+        timeClearBtn.classList.add("hidden");
+        const allSlotBtns = slotsGrid.querySelectorAll(".slot-btn");
+        allSlotBtns.forEach(function(b) { b.classList.remove("selected"); });
+        selectedSlotIso = null;
+        applySlotFilters();
+        updateSubmitState();
+      });
+    }
+
+    filterPills.forEach(function(pill) {
+      pill.addEventListener("click", function() {
+        filterPills.forEach(function(p) { p.classList.remove("active"); });
+        pill.classList.add("active");
+        currentPeriod = pill.getAttribute("data-period");
+        applySlotFilters();
+      });
+    });
 
     // Submit Booking
     submitBtn.addEventListener("click", function() {
